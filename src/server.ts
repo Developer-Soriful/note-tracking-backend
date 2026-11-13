@@ -1,12 +1,8 @@
 import app from "./app";
 import { env } from "./config/env";
 import { connectDatabase, disconnectDatabase } from "./database/connection";
-import dns from "node:dns";
 
-// Development-only DNS workaround
-if (process.env.NODE_ENV !== "production") {
-  dns.setServers(["1.1.1.1", "1.0.0.1"]);
-}
+
 const startServer = async (): Promise<void> => {
   try {
     await connectDatabase();
