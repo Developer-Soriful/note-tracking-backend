@@ -3,27 +3,27 @@ import { UserRole } from "../users/users.types";
 import { Note } from "./notes.model";
 import { PublicNote } from "./notes.types";
 
-interface CreateNoteInput {
+export interface CreateNoteInput {
   title: string;
   content: string;
 }
 
-interface UpdateNoteInput {
+export interface UpdateNoteInput {
   title?: string;
   content?: string;
 }
 
-interface PaginationInput {
+export interface PaginationInput {
   page: number;
   limit: number;
 }
 
-interface Requester {
+export interface Requester {
   id: string;
   role: UserRole;
 }
 
-const toPublicNote = (note: {
+export const toPublicNote = (note: {
   _id: unknown;
   title: string;
   content: string;

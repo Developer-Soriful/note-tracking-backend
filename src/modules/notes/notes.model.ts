@@ -3,12 +3,18 @@ import { INote } from "./notes.types";
 
 const noteSchema = new Schema<INote>(
   {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
     title: {
       type: String,
       required: true,
       trim: true,
       minlength: 1,
-      maxlength: 150,
+      maxlength: 200,
     },
 
     content: {
@@ -18,12 +24,6 @@ const noteSchema = new Schema<INote>(
       minlength: 1,
       maxlength: 20_000,
     },
-
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
   },
   {
     timestamps: true,
@@ -31,14 +31,15 @@ const noteSchema = new Schema<INote>(
   },
 );
 
-// Supports user-specific note listing and pagination.
+// Supports user's own notes listing and stable pagination.
+// Also supports filtering notes by user and sorting by creation time.
 noteSchema.index({
   user: 1,
   createdAt: -1,
   _id: -1,
 });
 
-// Supports admin-wide note listing and pagination.
+// Supports admin listing all notes with stable pagination.
 noteSchema.index({
   createdAt: -1,
   _id: -1,

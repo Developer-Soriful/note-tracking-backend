@@ -7,6 +7,7 @@ import { notFoundMiddleware } from "./shared/middleware/not-found.middleware";
 import { errorMiddleware } from "./shared/middleware/error.middleware";
 import authRoutes from "./modules/auth/auth.routes";
 import usersRoutes from "./modules/users/users.routes";
+import notesRoutes from "./modules/notes/notes.routes";
 const app = express();
 
 app.use(helmet());
@@ -52,6 +53,12 @@ app.use("/api/v1/auth", authRoutes);
 
 // USERS ROUTES
 app.use("/api/v1/users", usersRoutes);
+
+// NOTES ROUTES
+app.use("/api/v1/notes", notesRoutes);
+
+
+
 
 // HANDLE NOT FOUND ROUTES
 app.use(notFoundMiddleware);
