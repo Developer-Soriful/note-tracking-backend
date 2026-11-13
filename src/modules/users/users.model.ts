@@ -52,7 +52,4 @@ userSchema.index({
   _id: -1,
 });
 
-// Supports aggregation filtering and queries on user interests.
-userSchema.index({ interests: 1 });
-
 export const User = model<IUser>("User", userSchema);

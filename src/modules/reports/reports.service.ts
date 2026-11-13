@@ -24,11 +24,6 @@ const getUsersByInterest = async (
     metadata: Array<{ total: number }>;
   }>([
     {
-      $match: {
-        "interests.0": { $exists: true },
-      },
-    },
-    {
       $unwind: "$interests",
     },
     {
