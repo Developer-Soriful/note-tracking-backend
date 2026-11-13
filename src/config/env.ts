@@ -3,20 +3,60 @@ import { z } from "zod";
 
 dotenv.config();
 
+const corsOriginsSchema = z.string().transform((value, context) => {
+  const origins = value.split(",").map((origin) => origin.trim());
+  const hasInvalidOrigin = origins.some((origin) => {
+    try {
+      const url = new URL(origin);
+      return (
+        !["http:", "https:"].includes(url.protocol) ||
+        url.origin !== origin ||
+        Boolean(url.username || url.password)
+      );
+    } catch {
+      return true;
+    }
+  });
+
+  if (hasInvalidOrigin) {
+    context.addIssue({
+      code: "custom",
+      message:
+        "CORS_ORIGINS must be a comma-separated list of HTTP(S) origins without paths or credentials",
+    });
+  }
+
+  return origins;
+});
+
 const envSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]),
 
   PORT: z.coerce.number().int().min(1).max(65535).default(5000),
 
-  MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
+  HOST: z.string().trim().min(1).default("127.0.0.1"),
 
-  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
-
-  CORS_ORIGINS: z
+  MONGODB_URI: z
     .string()
-    .default("http://localhost:3000,http://localhost:5173"),
+    .min(1, "MONGODB_URI is required")
+    .refine(
+      (value) => /^mongodb(?:\+srv)?:\/\//.test(value),
+      "MONGODB_URI must use the mongodb:// or mongodb+srv:// protocol",
+    )
+    .refine(
+      (value) => !/[<>]/.test(value),
+      "MONGODB_URI must not contain unfilled example placeholders",
+    ),
+
+  JWT_SECRET: z
+    .string()
+    .min(32, "JWT_SECRET must be at least 32 characters")
+    .refine(
+      (value) => !/^(?:replace|change[-_ ]?me|your[-_ ]?)/i.test(value),
+      "JWT_SECRET must not be an example or placeholder value",
+    ),
+
+  CORS_ORIGINS: corsOriginsSchema,
 });
 
 const result = envSchema.safeParse(process.env);
@@ -33,7 +73,4 @@ if (!result.success) {
 
 export const env = {
   ...result.data,
-  CORS_ORIGINS: result.data.CORS_ORIGINS.split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean),
 };

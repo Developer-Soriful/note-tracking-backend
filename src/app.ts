@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { env } from "./config/env";
 import { notFoundMiddleware } from "./shared/middleware/not-found.middleware";
 import { errorMiddleware } from "./shared/middleware/error.middleware";
+import { requestLogMiddleware } from "./shared/middleware/request-log.middleware";
 import authRoutes from "./modules/auth/auth.routes";
 import usersRoutes from "./modules/users/users.routes";
 import notesRoutes from "./modules/notes/notes.routes";
@@ -12,7 +13,10 @@ import postsRoutes from "./modules/posts/posts.routes";
 import reportsRoutes from "./modules/reports/reports.routes";
 const app = express();
 
+app.set("trust proxy", "loopback");
+
 app.use(helmet());
+app.use(requestLogMiddleware);
 
 app.use(
   cors({

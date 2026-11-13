@@ -2,6 +2,7 @@ import type { ErrorRequestHandler } from "express";
 
 import { AppError } from "../errors/app-error";
 import { env } from "../../config/env";
+import { safeErrorMessage } from "../utils/safe-error-message";
 
 /**
  * Detects MongoDB duplicate key errors.
@@ -45,7 +46,7 @@ export const errorMiddleware: ErrorRequestHandler = (
       : "INTERNAL_SERVER_ERROR";
 
   if (!isOperational && !isDuplicate) {
-    console.error("Unexpected application error:", error);
+    console.error("Unexpected application error:", safeErrorMessage(error));
   }
 
   res.status(statusCode).json({

@@ -8,6 +8,7 @@ import {
   disconnectDatabase,
 } from "../database/connection";
 import { User } from "../modules/users/users.model";
+import { safeErrorMessage } from "../shared/utils/safe-error-message";
 
 const adminEnvSchema = z.object({
   ADMIN_NAME: z.string().trim().min(2).max(100),
@@ -30,8 +31,11 @@ const seedAdmin = async (): Promise<void> => {
   const parsedEnv = adminEnvSchema.safeParse(process.env);
 
   if (!parsedEnv.success) {
+    const issues = parsedEnv.error.issues
+      .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+      .join("; ");
     throw new Error(
-      `Invalid admin environment configuration: ${parsedEnv.error.message}`,
+      `Invalid admin environment configuration: ${issues}`,
     );
   }
 
@@ -73,12 +77,16 @@ const main = async (): Promise<void> => {
   } catch (error: unknown) {
     console.error(
       "Admin seeding failed:",
-      error instanceof Error ? error.message : "Unknown error",
+      safeErrorMessage(error, [process.env.ADMIN_PASSWORD ?? ""]),
     );
-
     process.exitCode = 1;
   } finally {
-    await disconnectDatabase();
+    try {
+      await disconnectDatabase();
+    } catch (error: unknown) {
+      console.error("Database disconnect failed:", safeErrorMessage(error));
+      process.exitCode = 1;
+    }
   }
 };
 
