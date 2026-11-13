@@ -4,16 +4,17 @@ import jwt from "jsonwebtoken";
 import { env } from "../../config/env";
 import { AppError } from "../errors/app-error";
 import { UserRole } from "../../modules/users/users.types";
+import { User } from "../../modules/users/users.model";
 
 const isUserRole = (value: unknown): value is UserRole => {
   return value === "user" || value === "admin";
 };
 
 /**
- * Verifies the JWT access token and attaches
- * the authenticated user's identity to the request.
+ * Verifies the JWT access token and authenticates the user's current
+ * identity and role against MongoDB as the authoritative source.
  */
-export const authenticate: RequestHandler = (req, _res, next) => {
+export const authenticate: RequestHandler = async (req, _res, next) => {
   const authorization = req.headers.authorization;
 
   if (!authorization) {
@@ -28,28 +29,58 @@ export const authenticate: RequestHandler = (req, _res, next) => {
     return;
   }
 
+  let userId: string;
+
   try {
-    const decoded = jwt.verify(match[1], env.JWT_SECRET, {
+    const rawDecoded = jwt.verify(match[1], env.JWT_SECRET, {
       algorithms: ["HS256"],
     });
 
     if (
-      typeof decoded === "string" ||
-      typeof decoded.sub !== "string" ||
-      !isUserRole(decoded.role)
+      typeof rawDecoded === "string" ||
+      typeof rawDecoded.sub !== "string"
     ) {
-      throw new Error("Invalid token payload");
+      next(new AppError("Invalid token payload", 401, "INVALID_TOKEN"));
+      return;
     }
 
-    req.user = {
-      id: decoded.sub,
-      role: decoded.role,
-    };
-
-    next();
+    userId = rawDecoded.sub;
   } catch {
     next(new AppError("Invalid or expired access token", 401, "INVALID_TOKEN"));
+    return;
   }
+
+  // Validate that sub matches standard 24-hex ObjectId format
+  if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
+    next(new AppError("Invalid user identifier in token", 401, "INVALID_TOKEN"));
+    return;
+  }
+
+  // Authoritative identity check: Load the user from MongoDB
+  const user = await User.findById(userId).select("_id role").lean();
+
+  if (!user) {
+    next(
+      new AppError(
+        "User account not found or no longer active",
+        401,
+        "UNAUTHORIZED",
+      ),
+    );
+    return;
+  }
+
+  if (!isUserRole(user.role)) {
+    next(new AppError("Invalid user role assigned", 403, "FORBIDDEN"));
+    return;
+  }
+
+  req.user = {
+    id: String(user._id),
+    role: user.role,
+  };
+
+  next();
 };
 
 /**
