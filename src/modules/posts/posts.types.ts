@@ -22,10 +22,21 @@ export interface PostPaginationInput {
 export interface PublicPost {
     id: string;
     userId: string;
+    authorName?: string;
     title: string;
     content: string;
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface AllPostsResult {
+    posts: PublicPost[];
+    pagination: {
+        page: number;
+        limit: number;
+        totalPosts: number;
+        totalPages: number;
+    };
 }
 
 export interface UserPostsAggregationResult {

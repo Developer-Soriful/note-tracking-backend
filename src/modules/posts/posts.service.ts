@@ -5,6 +5,7 @@ import { Post } from "./posts.model";
 import { User } from "../users/users.model";
 
 import type {
+    AllPostsResult,
     CreatePostInput,
     PostPaginationInput,
     PublicPost,
@@ -130,7 +131,10 @@ const getPostsByUser = async (
             id: String(result._id),
             name: result.name,
         },
-        posts: result.posts.map(toPublicPost),
+        posts: result.posts.map((p) => ({
+            ...toPublicPost(p),
+            authorName: result.name,
+        })),
         pagination: {
             page,
             limit,
@@ -140,7 +144,46 @@ const getPostsByUser = async (
     };
 };
 
+const getAllPosts = async (
+    pagination: PostPaginationInput
+): Promise<AllPostsResult> => {
+    const { page, limit } = pagination;
+    const skip = (page - 1) * limit;
+
+    const [posts, totalPosts] = await Promise.all([
+        Post.find()
+            .populate<{ user: { _id: Types.ObjectId; name: string } }>(
+                "user",
+                "name"
+            )
+            .sort({ createdAt: -1, _id: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+        Post.countDocuments(),
+    ]);
+
+    return {
+        posts: posts.map((post) => ({
+            id: String(post._id),
+            userId: post.user && typeof post.user === "object" ? String(post.user._id) : String(post.user),
+            authorName: post.user && typeof post.user === "object" ? post.user.name : "Anonymous",
+            title: post.title,
+            content: post.content,
+            createdAt: post.createdAt,
+            updatedAt: post.updatedAt,
+        })),
+        pagination: {
+            page,
+            limit,
+            totalPosts,
+            totalPages: Math.ceil(totalPosts / limit),
+        },
+    };
+};
+
 export const postsService = {
     createPost,
     getPostsByUser,
+    getAllPosts,
 };

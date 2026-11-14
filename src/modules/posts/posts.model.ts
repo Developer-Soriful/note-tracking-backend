@@ -38,4 +38,10 @@ postSchema.index({
     _id: -1,
 });
 
+// Supports public global post listing with stable pagination.
+postSchema.index({
+    createdAt: -1,
+    _id: -1,
+});
+
 export const Post = model<IPost>("Post", postSchema);

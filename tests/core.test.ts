@@ -122,13 +122,14 @@ describe("1. Database Indexing Verification", () => {
     assert.ok(indexes.some((idx) => idx.key.createdAt === -1 && idx.key._id === -1));
   });
 
-  it("Post schema defines compound lookup equality and sort index", async () => {
+  it("Post schema defines compound lookup equality and pagination indexes", async () => {
     const indexes = await Post.collection.indexes();
     assert.ok(
       indexes.some(
         (idx) => idx.key.user === 1 && idx.key.createdAt === -1 && idx.key._id === -1,
       ),
     );
+    assert.ok(indexes.some((idx) => idx.key.createdAt === -1 && idx.key._id === -1));
   });
 });
 
@@ -442,5 +443,21 @@ describe("6. Scenario 2: User Posts ($lookup) Aggregation", () => {
     assert.equal(data.data.pagination.totalPosts, 2);
     assert.equal(data.data.posts.length, 2);
     assert.equal(data.data.posts[0].userId, userAId);
+  });
+
+  it("retrieves all posts publicly without authentication", async () => {
+    const res = await request("/posts?page=1&limit=10");
+    assert.equal(res.status, 200);
+
+    const data = res.data as {
+      data: {
+        posts: Array<{ id: string; title: string; authorName: string }>;
+        pagination: { totalPosts: number };
+      };
+    };
+
+    assert.ok(Array.isArray(data.data.posts));
+    assert.ok(data.data.posts.length >= 2);
+    assert.ok(data.data.posts.some((p) => p.authorName === "User Alpha"));
   });
 });

@@ -9,6 +9,11 @@ import { validateBody } from "../../shared/middleware/validate.middleware";
 
 const router = Router();
 
+router.get(
+    "/",
+    postsController.getAllPosts
+);
+
 router.post(
     "/",
     authenticate,
