@@ -3,9 +3,9 @@ import type { Server } from "node:http";
 import { after, before, test } from "node:test";
 
 process.env.NODE_ENV = "test";
-process.env.MONGODB_URI = "mongodb://127.0.0.1:27017/backend-tests";
-process.env.JWT_SECRET = "test-only-random-secret-with-more-than-32-characters";
-process.env.CORS_ORIGINS = "http://localhost:3000";
+process.env.MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/backend-tests";
+process.env.JWT_SECRET = process.env.JWT_SECRET || "test-only-random-secret-with-more-than-32-characters";
+process.env.CORS_ORIGINS = process.env.CORS_ORIGINS || "http://localhost:3000";
 
 let server: Server;
 let baseUrl: string;
@@ -26,6 +26,9 @@ before(async () => {
 
 after(async () => {
   await new Promise<void>((resolve, reject) => {
+    if ("closeAllConnections" in server && typeof server.closeAllConnections === "function") {
+      server.closeAllConnections();
+    }
     server.close((error) => (error ? reject(error) : resolve()));
   });
 });

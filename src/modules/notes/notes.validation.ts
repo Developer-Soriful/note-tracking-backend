@@ -18,6 +18,13 @@ export const updateNoteSchema = z
 export const notePaginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
+  mine: z
+    .preprocess((val) => {
+      if (val === undefined || val === null || val === "") return undefined;
+      if (typeof val === "string") return val.toLowerCase() === "true";
+      return Boolean(val);
+    }, z.boolean().optional())
+    .optional(),
 });
 
 export const noteIdSchema = z

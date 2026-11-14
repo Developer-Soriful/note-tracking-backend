@@ -34,8 +34,11 @@ const getNotes: RequestHandler = async (req, res) => {
     );
   }
 
+  const isAdmin = requester.role === "admin";
+  const showOnlyMine = paginationResult.data.mine === true;
+
   const result =
-    requester.role === "admin"
+    isAdmin && !showOnlyMine
       ? await notesService.getAllNotes(paginationResult.data)
       : await notesService.getMyNotes(requester.id, paginationResult.data);
 

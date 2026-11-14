@@ -52,4 +52,7 @@ userSchema.index({
   _id: -1,
 });
 
+// Supports Scenario 1: Group by interests aggregation pipeline.
+userSchema.index({ interests: 1 });
+
 export const User = model<IUser>("User", userSchema);
